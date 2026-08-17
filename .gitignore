@@ -1,0 +1,14 @@
+.env
+.env.*
+!.env.example
+
+.playwright-cli/
+output/
+
+media/*
+!media/.gitkeep
+
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

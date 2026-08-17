@@ -1,0 +1,36 @@
+services:
+  cliplocal:
+    build:
+      context: .
+    ports:
+      - "127.0.0.1:8080:8080"
+    environment:
+      MEDIA_ROOT: /media
+      FFMPEG_BIN: /usr/bin/ffmpeg
+      FFPROBE_BIN: /usr/bin/ffprobe
+      YTDLP_BIN: /usr/local/bin/yt-dlp
+      DENO_BIN: /usr/local/bin/deno
+      DENO_DIR: /tmp/deno
+      HOME: /tmp
+      PHP_CLI_SERVER_WORKERS: "4"
+    volumes:
+      - type: bind
+        source: ${MEDIA_DIR:-./media}
+        target: /media
+        read_only: true
+    read_only: true
+    tmpfs:
+      - /tmp:size=128m,mode=1777,nosuid,nodev
+    init: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 256
+    restart: unless-stopped
+    networks:
+      - local_only
+
+networks:
+  local_only:
+    name: yt-tools_local_only

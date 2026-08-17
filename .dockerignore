@@ -1,0 +1,15 @@
+.git
+.github
+.env
+.env.*
+.playwright-cli
+output
+media
+.idea
+.vscode
+README.md
+CONTRIBUTING.md
+SECURITY.md
+LICENSE
+start.ps1
+stop.ps1
