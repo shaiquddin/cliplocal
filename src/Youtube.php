@@ -137,7 +137,9 @@ final class Youtube
             '--fragment-retries', '3',
             '--concurrent-fragments', '1',
             '--js-runtimes', 'deno:' . $this->deno,
+            '--extractor-args', 'youtube:player_client=web_embedded',
             '--download-sections', $section,
+	    '--force-keyframes-at-cuts',
             '--format', $formatSelector,
             '--merge-output-format', 'mkv',
             '--output', '-',
@@ -175,6 +177,7 @@ final class Youtube
         $encoderInputOpen = true;
         $downloadError = '';
         $encoderError = '';
+        $downloadStoppedAfterEncode = false;
 
         while ($downloadOpen || $encoderInputOpen || !feof($downloadPipes[2]) || !feof($encodePipes[1]) || !feof($encodePipes[2])) {
             if (connection_aborted()) {
@@ -240,11 +243,21 @@ final class Youtube
             }
 
             if ($write !== [] && $buffer !== '') {
-                $written = fwrite($encodePipes[0], $buffer);
+                $written = @fwrite($encodePipes[0], $buffer);
                 if ($written === false) {
+                    // FFmpeg stops reading after the requested duration, while yt-dlp may still have a buffered tail.
+                    $downloadStoppedAfterEncode = true;
+                    $buffer = '';
+                    if ($encoderInputOpen) {
+                        fclose($encodePipes[0]);
+                        $encoderInputOpen = false;
+                    }
+                    if ($downloadOpen) {
+                        fclose($downloadPipes[1]);
+                        $downloadOpen = false;
+                    }
                     proc_terminate($downloader);
-                    proc_terminate($encoder);
-                    throw new RuntimeException('FFmpeg stopped accepting the YouTube stream.');
+                    continue;
                 }
                 $buffer = (string) substr($buffer, $written);
             }
@@ -262,6 +275,9 @@ final class Youtube
 
         $downloadExit = proc_close($downloader);
         $encodeExit = proc_close($encoder);
+        if ($downloadStoppedAfterEncode && $encodeExit === 0) {
+            $downloadExit = 0;
+        }
         if ($downloadExit !== 0) {
             error_log('yt-dlp failure: ' . trim($downloadError));
         }
