@@ -38,11 +38,39 @@ function media_root(): string
     return rtrim($root, DIRECTORY_SEPARATOR);
 }
 
+/** @return list<string> */
+function allowed_request_hosts(): array
+{
+    $hosts = ['localhost', '127.0.0.1', '::1'];
+    $configured = getenv('APP_ALLOWED_HOSTS');
+
+    if ($configured !== false) {
+        foreach (explode(',', $configured) as $host) {
+            $host = strtolower(rtrim(trim($host), '.'));
+            if ($host !== '' && preg_match('/^(?:[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?|[a-f0-9:]+)$/', $host)) {
+                $hosts[] = $host;
+            }
+        }
+    }
+
+    return array_values(array_unique($hosts));
+}
+
+function request_hostname(string $host): string
+{
+    $host = strtolower(trim($host));
+    if (str_starts_with($host, '[')) {
+        $closingBracket = strpos($host, ']');
+        return $closingBracket === false ? '' : substr($host, 1, $closingBracket - 1);
+    }
+
+    return rtrim(explode(':', $host, 2)[0], '.');
+}
+
 function validate_local_request(): void
 {
-    $host = strtolower((string) ($_SERVER['HTTP_HOST'] ?? ''));
-    $hostname = explode(':', trim($host, '[]'))[0] ?? '';
-    $allowedHosts = ['localhost', '127.0.0.1', '::1'];
+    $hostname = request_hostname((string) ($_SERVER['HTTP_HOST'] ?? ''));
+    $allowedHosts = allowed_request_hosts();
 
     if (!in_array($hostname, $allowedHosts, true)) {
         abort_request(403, 'This application is available only through localhost.');

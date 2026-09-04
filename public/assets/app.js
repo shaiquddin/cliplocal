@@ -99,6 +99,19 @@
         elements.editorMessage.style.color = error ? '#b15444' : '#14785f';
     }
 
+    async function readJsonResponse(response) {
+        const body = await response.text();
+        try {
+            return JSON.parse(body);
+        } catch {
+            const message = body.trim();
+            if (!response.ok && message && !message.startsWith('<')) {
+                throw new Error(message.slice(0, 500));
+            }
+            throw new Error('The server returned an invalid response.');
+        }
+    }
+
     function stopPreview() {
         if (state.previewTimer) {
             clearInterval(state.previewTimer);
@@ -175,7 +188,7 @@
 
         try {
             const response = await fetch('/api/media.php', { cache: 'no-store' });
-            const data = await response.json();
+            const data = await readJsonResponse(response);
             if (!response.ok) throw new Error(data.error || 'Could not read the media folder.');
 
             elements.mediaSelect.innerHTML = '';
@@ -222,7 +235,7 @@
         elements.mediaHint.textContent = 'Reading media details…';
         try {
             const response = await fetch(`/api/media-info.php?file=${encodeURIComponent(relativePath)}`, { cache: 'no-store' });
-            const data = await response.json();
+            const data = await readJsonResponse(response);
             if (!response.ok) throw new Error(data.error || 'This file could not be opened.');
 
             state.local.file = relativePath;
@@ -287,7 +300,7 @@
 
         try {
             const response = await fetch(`/api/youtube-info.php?url=${encodeURIComponent(elements.youtubeUrl.value.trim())}`, { cache: 'no-store' });
-            const data = await response.json();
+            const data = await readJsonResponse(response);
             if (!response.ok) throw new Error(data.error || 'YouTube video information could not be retrieved.');
 
             state.youtube.id = data.id;

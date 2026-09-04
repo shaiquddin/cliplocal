@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+require dirname(__DIR__) . '/src/bootstrap.php';
 require dirname(__DIR__) . '/src/MediaLibrary.php';
 require dirname(__DIR__) . '/src/ClipOptions.php';
 require dirname(__DIR__) . '/src/Ffmpeg.php';
@@ -23,6 +24,14 @@ file_put_contents($testRoot . DIRECTORY_SEPARATOR . 'sample.mp4', 'fixture');
 file_put_contents($testRoot . DIRECTORY_SEPARATOR . 'ignored.txt', 'fixture');
 
 try {
+    putenv('APP_ALLOWED_HOSTS=cliplocal.dev,Media.Local.');
+    $allowedHosts = allowed_request_hosts();
+    expect(in_array('cliplocal.dev', $allowedHosts, true), 'Configured local hostnames should be accepted.');
+    expect(in_array('media.local', $allowedHosts, true), 'Configured hostnames should be normalized.');
+    expect(request_hostname('cliplocal.dev:443') === 'cliplocal.dev', 'Host ports should be removed.');
+    expect(request_hostname('[::1]:8080') === '::1', 'Bracketed IPv6 hosts should be parsed.');
+    putenv('APP_ALLOWED_HOSTS');
+
     $library = new MediaLibrary((string) realpath($testRoot));
     $items = $library->all();
     expect(count($items) === 1, 'MediaLibrary should list only supported video extensions.');

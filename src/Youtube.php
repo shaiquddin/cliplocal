@@ -80,6 +80,7 @@ final class Youtube
             '--retries', '2',
             '--extractor-retries', '2',
             '--js-runtimes', 'deno:' . $this->deno,
+            '--extractor-args', 'youtube:player_client=web_embedded',
             '--',
             $parsed['url'],
         ];

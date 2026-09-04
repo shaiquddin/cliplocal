@@ -115,6 +115,9 @@ ClipLocal is intended for a trusted local machine:
 
 - Docker publishes the service only on `127.0.0.1:8080`.
 - PHP rejects non-local request hosts and cross-site origins.
+- Additional trusted local hostnames can be set with the comma-separated
+  `APP_ALLOWED_HOSTS` environment variable; the Docker setup defaults to
+  `cliplocal.dev` for the local Caddy route.
 - The container runs without Linux capabilities and with a read-only root
   filesystem.
 - The local-media directory is mounted read-only.
